@@ -38,67 +38,67 @@ if(Qt5_FOUND AND WIN32 AND TARGET Qt5::qmake AND NOT TARGET Qt5::windeployqt)
 endif()
 
 set(LIBRARY_HEADERS
-    library/SocksSessionManager.h
-    library/SocksSession.h
-    library/SocksServer.h
-    library/SocksConnection.h
-    library/decorators/ThrottlingDecorator.h
-    library/decorators/QIODeviceDecorator.h
-    library/protocol/SocksReplyMessage4a.h
-    library/protocol/SocksProtocolMessage.h
-    library/protocol/Socks5UDPRequestMessage.h
-    library/protocol/Socks5RequestMessage.h
-    library/protocol/Socks5ReplyMessage.h
-    library/protocol/Socks5MethodSelectionMessage.h
-    library/protocol/Socks5GreetingMessage.h
-    library/protocol/Socks4RequestMessage.h
-    library/protocol/Socks4ReplyMessage.h
-    library/states/SocksState.h
-    library/states/Socks5UDPAssociateState.h
-    library/states/Socks5UDPAssociatedState.h
-    library/states/Socks5ConnectState.h
-    library/states/Socks5ConnectedState.h
-    library/states/Socks5AuthState.h
-    library/states/Socks5AuthenticatedState.h
-    library/states/Socks4InitialState.h
-    library/states/Socks4ConnectState.h
-    library/states/Socks4ConnectedState.h
-    library/states/InitialState.h
-    library/decorators/QTcpSocketDecorator.h
+    src/SocksSessionManager.h
+    src/SocksSession.h
+    src/SocksServer.h
+    src/SocksConnection.h
+    src/decorators/ThrottlingDecorator.h
+    src/decorators/QIODeviceDecorator.h
+    src/protocol/SocksReplyMessage4a.h
+    src/protocol/SocksProtocolMessage.h
+    src/protocol/Socks5UDPRequestMessage.h
+    src/protocol/Socks5RequestMessage.h
+    src/protocol/Socks5ReplyMessage.h
+    src/protocol/Socks5MethodSelectionMessage.h
+    src/protocol/Socks5GreetingMessage.h
+    src/protocol/Socks4RequestMessage.h
+    src/protocol/Socks4ReplyMessage.h
+    src/states/SocksState.h
+    src/states/Socks5UDPAssociateState.h
+    src/states/Socks5UDPAssociatedState.h
+    src/states/Socks5ConnectState.h
+    src/states/Socks5ConnectedState.h
+    src/states/Socks5AuthState.h
+    src/states/Socks5AuthenticatedState.h
+    src/states/Socks4InitialState.h
+    src/states/Socks4ConnectState.h
+    src/states/Socks4ConnectedState.h
+    src/states/InitialState.h
+    src/decorators/QTcpSocketDecorator.h
 )
 
 set(LIBRARY_SOURCES
-    library/SocksSessionManager.cpp
-    library/SocksSession.cpp
-    library/SocksServer.cpp
-    library/SocksConnection.cpp
-    library/decorators/ThrottlingDecorator.cpp
-    library/decorators/QIODeviceDecorator.cpp
-    library/protocol/SocksReplyMessage4a.cpp
-    library/protocol/SocksProtocolMessage.cpp
-    library/protocol/Socks5UDPRequestMessage.cpp
-    library/protocol/Socks5RequestMessage.cpp
-    library/protocol/Socks5ReplyMessage.cpp
-    library/protocol/Socks5MethodSelectionMessage.cpp
-    library/protocol/Socks5GreetingMessage.cpp
-    library/protocol/Socks4RequestMessage.cpp
-    library/protocol/Socks4ReplyMessage.cpp
-    library/states/SocksState.cpp
-    library/states/Socks5UDPAssociateState.cpp
-    library/states/Socks5UDPAssociatedState.cpp
-    library/states/Socks5ConnectState.cpp
-    library/states/Socks5ConnectedState.cpp
-    library/states/Socks5AuthState.cpp
-    library/states/Socks5AuthenticatedState.cpp
-    library/states/Socks4InitialState.cpp
-    library/states/Socks4ConnectState.cpp
-    library/states/Socks4ConnectedState.cpp
-    library/states/InitialState.cpp
-    library/decorators/QTcpSocketDecorator.cpp
+    src/SocksSessionManager.cpp
+    src/SocksSession.cpp
+    src/SocksServer.cpp
+    src/SocksConnection.cpp
+    src/decorators/ThrottlingDecorator.cpp
+    src/decorators/QIODeviceDecorator.cpp
+    src/protocol/SocksReplyMessage4a.cpp
+    src/protocol/SocksProtocolMessage.cpp
+    src/protocol/Socks5UDPRequestMessage.cpp
+    src/protocol/Socks5RequestMessage.cpp
+    src/protocol/Socks5ReplyMessage.cpp
+    src/protocol/Socks5MethodSelectionMessage.cpp
+    src/protocol/Socks5GreetingMessage.cpp
+    src/protocol/Socks4RequestMessage.cpp
+    src/protocol/Socks4ReplyMessage.cpp
+    src/states/SocksState.cpp
+    src/states/Socks5UDPAssociateState.cpp
+    src/states/Socks5UDPAssociatedState.cpp
+    src/states/Socks5ConnectState.cpp
+    src/states/Socks5ConnectedState.cpp
+    src/states/Socks5AuthState.cpp
+    src/states/Socks5AuthenticatedState.cpp
+    src/states/Socks4InitialState.cpp
+    src/states/Socks4ConnectState.cpp
+    src/states/Socks4ConnectedState.cpp
+    src/states/InitialState.cpp
+    src/decorators/QTcpSocketDecorator.cpp
 )
 
 set(SOURCES
-    ui/main.cpp
+    src/main.cpp
     data/SocksProxy.qrc
 )
 
@@ -115,7 +115,7 @@ set_source_files_properties(${TRANSLATIONS} PROPERTIES OUTPUT_LOCATION "${CMAKE_
 qt5_add_translation(QM_FILES ${TRANSLATIONS})
 
 add_executable(SocksProxy WIN32 ${SOURCES} ${LIBRARY_HEADERS} ${LIBRARY_SOURCES} ${QM_FILES})
-target_include_directories(SocksProxy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/library")
+target_include_directories(SocksProxy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(SocksProxy Qt5::Widgets Qt5::Network)
 set_target_properties(SocksProxy PROPERTIES DEBUG_POSTFIX "d")
 

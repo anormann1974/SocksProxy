@@ -254,18 +254,18 @@ void ThrottlingDecorator::commonConstructor()
     //This timer is what makes the throttling work
     _bucketTimer = new QTimer(this);
     connect(_bucketTimer,
-            SIGNAL(timeout()),
+            &QTimer::timeout,
             this,
-            SLOT(handleBuckets()));
+            &ThrottlingDecorator::handleBuckets);
     _bucketTimer->start(40);
     _lastBucketTime.start();
 
     //This timer is what makes the metrics work
     QTimer * metricTimer = new QTimer(this);
     connect(metricTimer,
-            SIGNAL(timeout()),
+            &QTimer::timeout,
             this,
-            SLOT(handleMetrics()));
+            &ThrottlingDecorator::handleMetrics);
     metricTimer->start(1000);
     _bytesReadSinceLastMetric = 0.0;
     _bytesWrittenSinceLastMetric = 0.0;

@@ -6,24 +6,24 @@ QIODeviceDecorator::QIODeviceDecorator(QIODevice *toDecorate, QObject *parent) :
     QIODevice(parent), _toDecorate(toDecorate)
 {
     connect(toDecorate,
-            SIGNAL(aboutToClose()),
+            &QIODevice::aboutToClose,
             this,
-            SLOT(handleChildAboutToClose()));
+            &QIODeviceDecorator::handleChildAboutToClose);
 
     connect(toDecorate,
-            SIGNAL(bytesWritten(qint64)),
+            &QIODevice::bytesWritten,
             this,
-            SLOT(handleChildBytesWritten(qint64)));
+            &QIODeviceDecorator::handleChildBytesWritten);
 
     connect(toDecorate,
-            SIGNAL(readChannelFinished()),
+            &QIODevice::readChannelFinished,
             this,
-            SLOT(handleChildReadChannelFinished()));
+            &QIODeviceDecorator::handleChildReadChannelFinished);
 
     connect(toDecorate,
-            SIGNAL(readyRead()),
+            &QIODevice::readyRead,
             this,
-            SLOT(handleChildReadyRead()));
+            &QIODeviceDecorator::handleChildReadyRead);
 
     /*
       This line is very important --- QIODevice will not call our virtual functions (readData, etc.)

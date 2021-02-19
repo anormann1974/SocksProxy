@@ -36,8 +36,8 @@ protected:
     virtual void handleDecoratedDisconnected();
     virtual void handleDecoratedError(QAbstractSocket::SocketError error);
     virtual void handleDecoratedHostFound();
-    virtual void handleDecoratedProxyAuthenticationRequired(const QNetworkProxy& proxy,
-                                                    QAuthenticator * authenticator);
+    virtual void handleDecoratedProxyAuthenticationRequired(const QNetworkProxy &proxy,
+                                                            QAuthenticator *authenticator);
     virtual void handleDecoratedStateChanged(QAbstractSocket::SocketState state);
 
     //These catch signals from QIODevice

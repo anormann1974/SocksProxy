@@ -1,5 +1,6 @@
 #include "QTcpSocketDecorator.h"
 
+#include <QAuthenticator>
 #include <QtDebug>
 
 QTcpSocketDecorator::QTcpSocketDecorator(QPointer<QTcpSocket> decorated, QObject *parent) :
@@ -111,58 +112,53 @@ void QTcpSocketDecorator::connectSignalsAndSlots()
         return;
     }
 
-    QTcpSocket * decorated = _decorated.data();
+    QTcpSocket *decorated = _decorated.data();
     connect(decorated,
-            SIGNAL(connected()),
+            &QTcpSocket::connected,
             this,
-            SLOT(handleDecoratedConnected()));
+            &QTcpSocketDecorator::handleDecoratedConnected);
     connect(decorated,
-            SIGNAL(disconnected()),
+            &QTcpSocket::disconnected,
             this,
-            SLOT(handleDecoratedDisconnected()));
+            &QTcpSocketDecorator::handleDecoratedDisconnected);
     connect(decorated,
-            SIGNAL(error(QAbstractSocket::SocketError)),
+            &QTcpSocket::errorOccurred,
             this,
-            SLOT(handleDecoratedError(QAbstractSocket::SocketError)));
+            &QTcpSocketDecorator::handleDecoratedError);
     connect(decorated,
-            SIGNAL(hostFound()),
+            &QTcpSocket::hostFound,
             this,
-            SLOT(handleDecoratedHostFound()));
+            &QTcpSocketDecorator::handleDecoratedHostFound);
     connect(decorated,
-            SIGNAL(proxyAuthenticationRequired(QNetworkProxy,QAuthenticator*)),
+            &QTcpSocket::proxyAuthenticationRequired,
             this,
-            SLOT(handleDecoratedProxyAuthenticationRequired(QNetworkProxy,QAuthenticator*)));
+            &QTcpSocketDecorator::handleDecoratedProxyAuthenticationRequired);
     connect(decorated,
-            SIGNAL(stateChanged(QAbstractSocket::SocketState)),
+            &QTcpSocket::stateChanged,
             this,
-            SLOT(handleDecoratedStateChanged(QAbstractSocket::SocketState)));
+            &QTcpSocketDecorator::handleDecoratedStateChanged);
 
     connect(decorated,
-            SIGNAL(aboutToClose()),
+            &QTcpSocket::aboutToClose,
             this,
-            SLOT(handleDecoratedAboutToClose()));
+            &QTcpSocketDecorator::handleDecoratedAboutToClose);
     connect(decorated,
-            SIGNAL(bytesWritten(qint64)),
+            &QTcpSocket::bytesWritten,
             this,
-            SLOT(handleDecoratedBytesWritten(qint64)));
+            &QTcpSocketDecorator::handleDecoratedBytesWritten);
     connect(decorated,
-            SIGNAL(readChannelFinished()),
+            &QTcpSocket::readChannelFinished,
             this,
-            SLOT(handleDecoreatedReadChannelFinished()));
+            &QTcpSocketDecorator::handleDecoreatedReadChannelFinished);
     connect(decorated,
-            SIGNAL(readyRead()),
+            &QTcpSocket::readyRead,
             this,
-            SLOT(handleDecoratedReadyRead()));
+            &QTcpSocketDecorator::handleDecoratedReadyRead);
 
     connect(decorated,
-            SIGNAL(destroyed()),
+            &QTcpSocket::destroyed,
             this,
-            SLOT(handleDecoratedDestroyed()));
-    connect(decorated,
-            SIGNAL(destroyed(QObject*)),
-            this,
-            SLOT(handleDecoratedDestroyed(QObject*)));
-
+            &QTcpSocketDecorator::handleDecoratedDestroyed);
 }
 
 //private

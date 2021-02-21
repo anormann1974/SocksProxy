@@ -23,15 +23,12 @@ public:
 
     bool isStarted() const;
     
-private slots:
-    void handleNewIncomingConnection();
-    void handleConnectionDestroyed();
-
 private:
+    void onNewIncomingConnection();
+
     QHostAddress _listenAddress;
     quint16 _listenPort;
     qreal _throttle;
-    QPointer<QTcpServer> _serverSock;
-    QList<QPointer<SocksConnection> > _connections;
-    
+    QScopedPointer<QTcpServer> _serverSock;
+    QList<QPointer<SocksConnection> > _connections;    
 };

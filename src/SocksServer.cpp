@@ -1,35 +1,41 @@
 #include "SocksServer.h"
-
-#include <QtDebug>
-#include <QTcpServer>
-#include <QMutableListIterator>
-
 #include "SocksConnection.h"
+
+#include <QLoggingCategory>
+#include <QTcpServer>
+
+
+namespace {
+static QLoggingCategory lc("SocksServer");
+}
 
 SocksServer::SocksServer(QHostAddress listenAddress,
                          quint16 listenPort,
                          qreal throttle,
-                         QObject *parent) :
-    QObject(parent), _listenAddress(listenAddress), _listenPort(listenPort), _throttle(throttle)
+                         QObject *parent)
+    : QObject(parent)
+    , _listenAddress(listenAddress)
+    , _listenPort(listenPort)
+    , _throttle(throttle)
 {
 }
 
 SocksServer::~SocksServer()
 {
-    qDebug() << "SocksServer" << this << "shutting down";
+    qCDebug(lc) << "Shutting down";
+
     if (!_serverSock.isNull())
     {
         _serverSock->close();
-        _serverSock->deleteLater();
     }
 
-    for (QPointer<SocksConnection> conn : _connections)
+    for (auto conn : _connections)
     {
-        if (conn.isNull())
-            continue;
-
-        conn->close();
-        conn->deleteLater();
+        if (!conn.isNull())
+        {
+            conn->close();
+            conn->deleteLater();
+        }
     }
 
     _connections.clear();
@@ -40,33 +46,29 @@ void SocksServer::start()
     if (!_serverSock.isNull())
         _serverSock->deleteLater();
 
-    _serverSock = new QTcpServer(this);
+    _serverSock.reset(new QTcpServer(this));
 
     if (!_serverSock->listen(_listenAddress,_listenPort))
     {
         _serverSock->deleteLater();
-        qWarning() << this << "failed to listen on" << _listenAddress << _listenPort;
+        qCWarning(lc) << "Failed to listen on" << _listenAddress << _listenPort;
         return;
     }
 
+    connect(_serverSock.data(), &QTcpServer::newConnection, this, &SocksServer::onNewIncomingConnection);
 
-    connect(_serverSock.data(),
-            &QTcpServer::newConnection,
-            this,
-            &SocksServer::handleNewIncomingConnection);
-
-    qDebug() << "Listening on" << _listenAddress << _listenPort;
+    qCDebug(lc) << "Listening on" << _listenAddress << _listenPort;
 }
 
 bool SocksServer::isStarted() const
 {
     if (_serverSock.isNull())
         return false;
+
     return _serverSock->isListening();
 }
 
-//private slot
-void SocksServer::handleNewIncomingConnection()
+void SocksServer::onNewIncomingConnection()
 {
     int count = 0;
     const int max = 50;
@@ -76,34 +78,17 @@ void SocksServer::handleNewIncomingConnection()
         QTcpSocket *clientSock = _serverSock->nextPendingConnection();
         QPointer<SocksConnection> connection = new SocksConnection(clientSock, this);
 
-        connect(connection.data(),
-                &SocksConnection::destroyed,
-                this,
-                &SocksServer::handleConnectionDestroyed);
+        connect(connection.data(), &SocksConnection::destroyed, this, [this, connection]() {
+            if (connection.isNull())
+            {
+                //qCDebug(lc) << "Removing connection" << connection.data();
+                _connections.removeOne(connection);
+            }
+        });
         _connections.append(connection);
         //qDebug() << "Client" << clientSock->peerAddress().toString() << ":" << clientSock->peerPort() << "connected";
     }
 
     if (count == max)
-        qDebug() << this << "looped too much";
-}
-
-//private slot
-void SocksServer::handleConnectionDestroyed()
-{
-    QMutableListIterator<QPointer<SocksConnection>> iter(_connections);
-
-    bool pruned = false;
-
-    while (iter.hasNext())
-    {        
-        if (const QPointer<SocksConnection>& conn = iter.next(); conn.isNull())
-        {
-            iter.remove();
-            pruned = true;
-        }
-    }
-
-    if (!pruned)
-        qWarning() << "handleConnectionDestroyed called but no dead connections were found...";
+        qCDebug(lc) << "Looped too much";
 }

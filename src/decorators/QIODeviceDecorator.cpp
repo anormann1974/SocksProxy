@@ -2,8 +2,9 @@
 
 #include <QtDebug>
 
-QIODeviceDecorator::QIODeviceDecorator(QIODevice *toDecorate, QObject *parent) :
-    QIODevice(parent), _toDecorate(toDecorate)
+QIODeviceDecorator::QIODeviceDecorator(QIODevice *toDecorate, QObject *parent)
+    : QIODevice(parent)
+    , _toDecorate(toDecorate)
 {
     connect(toDecorate,
             &QIODevice::aboutToClose,
@@ -30,7 +31,7 @@ QIODeviceDecorator::QIODeviceDecorator(QIODevice *toDecorate, QObject *parent) :
       if it appears that we aren't open. isOpen() uses openMode() to decide. Make sure our openMode matches
       our child _toDecorate
     */
-    this->setOpenMode(_toDecorate->openMode());
+    setOpenMode(_toDecorate->openMode());
 
     //If _toDecorate is some other class's child, it could be deleted out from under us
     _toDecorate->setParent(this);
@@ -39,8 +40,10 @@ QIODeviceDecorator::QIODeviceDecorator(QIODevice *toDecorate, QObject *parent) :
 QIODeviceDecorator::~QIODeviceDecorator()
 {
     qDebug() << "QIODeviceDecorator" << this << "shutting down";
+
     if (_toDecorate.isNull())
         return;
+
     _toDecorate->close();
     _toDecorate->deleteLater();
 }
@@ -73,7 +76,7 @@ bool QIODeviceDecorator::canReadLine() const
 void QIODeviceDecorator::close()
 {
     _toDecorate->close();
-    this->setOpenMode(_toDecorate->openMode());
+    setOpenMode(_toDecorate->openMode());
 }
 
 //virtual from QIODevice
@@ -85,8 +88,8 @@ bool QIODeviceDecorator::isSequential() const
 //virtual from QIODevice
 bool QIODeviceDecorator::open(QIODevice::OpenMode mode)
 {
-    bool toRet = _toDecorate->open(mode);
-    this->setOpenMode(_toDecorate->openMode());
+    bool toRet = _toDecorate->open(mode);    
+    setOpenMode(_toDecorate->openMode());
     return toRet;
 }
 
@@ -150,23 +153,23 @@ qint64 QIODeviceDecorator::writeData(const char *data, qint64 len)
 //protected slot
 void QIODeviceDecorator::handleChildAboutToClose()
 {
-    this->aboutToClose();
+    aboutToClose();
 }
 
 //protected slot
-void QIODeviceDecorator::handleChildBytesWritten(qint64 bytesWritten)
+void QIODeviceDecorator::handleChildBytesWritten(qint64 bytes)
 {
-    this->bytesWritten(bytesWritten);
+    bytesWritten(bytes);
 }
 
 //protected slot
 void QIODeviceDecorator::handleChildReadChannelFinished()
 {
-    this->readChannelFinished();
+    readChannelFinished();
 }
 
 //protected slot
 void QIODeviceDecorator::handleChildReadyRead()
 {
-    this->readyRead();
+    readyRead();
 }

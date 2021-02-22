@@ -15,9 +15,6 @@ public:
     //pure-virtual from SocksState
     virtual void handleIncomingBytes(QByteArray &bytes) override;
     
-private slots:
-    void handleTimeout();
-
 private:
     QTimer *_timeoutTimer;
 

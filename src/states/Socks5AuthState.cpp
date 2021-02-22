@@ -34,23 +34,22 @@ void Socks5AuthState::handleSetAsNewState()
         //In this case, since 0x00 is the "no authentication" method, transition to already being authenticated
         QSharedPointer<Socks5MethodSelectionMessage> msg = QSharedPointer<Socks5MethodSelectionMessage>(new Socks5MethodSelectionMessage(0x00));
 
-        QString sendError;
-        if (!_parent->sendMessage(msg, &sendError))
+        if (!_parent->sendMessage(msg))
         {
             qWarning() << "Failed to serialize/send auth selection method";
             _parent->close();
-            return;
         }
-        Socks5AuthenticatedState * nState = new Socks5AuthenticatedState(_parent);
-        _parent->setState(nState);
-        return;
+        else
+        {
+            auto state = new Socks5AuthenticatedState(_parent);
+            _parent->setState(state);
+        }
     }
     //Send a nasty note and close the connection
     else
     {
-        QSharedPointer<Socks5MethodSelectionMessage> msg = QSharedPointer<Socks5MethodSelectionMessage>(new Socks5MethodSelectionMessage(0xff));
+        QSharedPointer<Socks5MethodSelectionMessage> msg = QSharedPointer<Socks5MethodSelectionMessage>(new Socks5MethodSelectionMessage(0xff));        
         _parent->sendMessage(msg);
         _parent->close();
-        return;
     }
 }

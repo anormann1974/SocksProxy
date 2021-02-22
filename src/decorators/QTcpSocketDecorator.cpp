@@ -252,13 +252,3 @@ void QTcpSocketDecorator::handleDecoratedDestroyed(QObject *obj)
     Q_UNUSED(obj)
     qWarning() << "Warning:" << this << "had decorated object deleted out from underneath.";
 }
-
-void QTcpSocketDecorator::connectToHostImplementation(const QString &hostName, quint16 port, QIODevice::OpenMode mode)
-{
-    _decorated->connectToHost(hostName,port,mode);
-}
-
-void QTcpSocketDecorator::disconnectFromHostImplementation()
-{
-    _decorated->disconnectFromHost();
-}

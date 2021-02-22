@@ -48,9 +48,6 @@ protected:
 
     //Catch signal from QObjet
     virtual void handleDecoratedDestroyed(QObject * obj=0);
-
-    virtual void connectToHostImplementation(const QString &hostName, quint16 port, OpenMode mode);
-    virtual void disconnectFromHostImplementation();
     
 private:
     void connectSignalsAndSlots();

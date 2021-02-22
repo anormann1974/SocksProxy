@@ -3,6 +3,7 @@
 
 #include <QLoggingCategory>
 #include <QTcpServer>
+#include <QDataStream>
 
 
 namespace {
@@ -75,7 +76,61 @@ void SocksServer::onNewIncomingConnection()
 
     while (_serverSock->hasPendingConnections() && ++count < max)
     {
-        QTcpSocket *clientSock = _serverSock->nextPendingConnection();
+        auto clientSock = _serverSock->nextPendingConnection();
+
+//        connect(clientSock, &QTcpSocket::readyRead, this, [clientSock]() {
+//            QByteArray buffer;
+
+//            while (clientSock->bytesAvailable() > 0)
+//            {
+//                buffer.append(clientSock->readAll());
+//            }
+
+//            qCDebug(lc) << "New data available:" << buffer.toHex(' ');
+
+//            // init state
+//            {
+//                uint8_t version;
+//                QSet<uint8_t> authList;
+
+//                QDataStream stream(&buffer, QIODevice::ReadOnly);
+//                stream >> version;
+
+//                if (version == 5)
+//                {
+//                    uint8_t numAuth;
+//                    stream >> numAuth;
+
+//                    authList.reserve(numAuth);
+
+//                    for (uint8_t i=0; i<numAuth; ++i)
+//                    {
+//                        uint8_t auth;
+//                        stream >> auth;
+
+//                        authList.insert(auth);
+//                    }
+
+//                    if (authList.contains(0x00))
+//                    {
+//                        QByteArray output;
+//                        QDataStream out(&output, QIODevice::WriteOnly);
+
+//                        const uint8_t ver = 5;
+//                        const uint8_t auth = 0;
+//                        out << ver << auth;
+
+//                        qCDebug(lc) << "Writing auth reply:" << output.toHex(' ');
+//                        clientSock->write(output);
+//                    }
+//                }
+//            }
+//        });
+
+//        connect(clientSock, &QTcpSocket::aboutToClose, this, []() {
+//        });
+
+
         QPointer<SocksConnection> connection = new SocksConnection(clientSock, this);
 
         connect(connection.data(), &SocksConnection::destroyed, this, [this, connection]() {
@@ -85,8 +140,10 @@ void SocksServer::onNewIncomingConnection()
                 _connections.removeOne(connection);
             }
         });
+
         _connections.append(connection);
-        //qDebug() << "Client" << clientSock->peerAddress().toString() << ":" << clientSock->peerPort() << "connected";
+
+        qCDebug(lc).nospace().noquote() << "Client " << clientSock->peerAddress().toString() << ":" << clientSock->peerPort() << " connected";
     }
 
     if (count == max)

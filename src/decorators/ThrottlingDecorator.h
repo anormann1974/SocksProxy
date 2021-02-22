@@ -59,10 +59,9 @@ private:
     QByteArray _readQueue;
 
     bool _childIsFinished;
-    QAbstractSocket * _cheaterSocketReference;
+    QAbstractSocket *_cheaterSocketReference;
 
     qreal _bytesReadSinceLastMetric;
     qreal _bytesWrittenSinceLastMetric;
     QElapsedTimer _lastMetricTime;
-    
 };

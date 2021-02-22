@@ -1,16 +1,17 @@
 #include "SocksConnection.h"
-
-#include <QtDebug>
-#include <QHostAddress>
-
 #include "states/InitialState.h"
 #include "decorators/QIODeviceDecorator.h"
 #include "decorators/ThrottlingDecorator.h"
 
-SocksConnection::SocksConnection(QAbstractSocket *socket,QObject *parent) :
-    QObject(parent)
+#include <QtDebug>
+#include <QHostAddress>
+
+
+SocksConnection::SocksConnection(QAbstractSocket *socket, QObject *parent)
+    : QObject(parent)
+    , _rawSocket(socket)
+    , _socksVersionSet(false)
 {
-    _rawSocket = socket;
     if (_rawSocket.isNull())
     {
         qWarning() << this << "initialized with null socket";
@@ -20,23 +21,13 @@ SocksConnection::SocksConnection(QAbstractSocket *socket,QObject *parent) :
     _socket = new ThrottlingDecorator(_rawSocket,this);
 
     //When we have incoming bytes, we read them
-    connect(_socket.data(),
-            SIGNAL(readyRead()),
-            this,
-            SLOT(handleReadyRead()));
+    connect(_socket.data(), &QIODevice::readyRead, this, &SocksConnection::onReadyRead);
 
     //When our socket closes, we die
-    connect(_socket.data(),
-            SIGNAL(aboutToClose()),
-            this,
-            SLOT(handleSocketClosed()));
-
+    connect(_socket.data(), &QIODevice::aboutToClose, this, &SocksConnection::deleteLater);
 
     //Set our state to the initial "someone just connected" state
-    this->setState(new InitialState(this));
-
-    //We don't yet know what version of SOCKS we're supposed to be speaking
-    _socksVersionSet = false;
+    setState(new InitialState(this));
 }
 
 SocksConnection::~SocksConnection()
@@ -65,6 +56,7 @@ void SocksConnection::setSocksVersion(SocksProtocolMessage::SocksVersion nVer)
 {
     if (_socksVersionSet)
         return;
+
     _socksVersionSet = true;
     _socksVersion = nVer;
 }
@@ -106,7 +98,6 @@ QHostAddress SocksConnection::peerAddress() const
     return _rawSocket->peerAddress();
 }
 
-//public slot
 void SocksConnection::sendData(const QByteArray &toSend)
 {
     if (_socket.isNull())
@@ -122,19 +113,18 @@ void SocksConnection::sendData(const QByteArray &toSend)
     //qDebug() << "State" << _connectionState << "wrote" << toSend.toHex();
 }
 
-//public slot
-void SocksConnection::setState(SocksState *nState)
+void SocksConnection::setState(SocksState *state)
 {
-    if (nState == 0)
+    if (state == nullptr)
         return;
 
     if (!_connectionState.isNull())
         delete _connectionState;
 
-    _connectionState = nState;
+    _connectionState = state;
 
     //Call the "you've just been set as the new state!" handler
-    nState->handleSetAsNewState();
+    state->handleSetAsNewState();
 
     //Force the new state to start off where the last one ended traffic-wise
     if (!_recvBuffer.isEmpty())
@@ -145,10 +135,10 @@ void SocksConnection::close()
 {
     if (_socket.isNull())
         return;
+
     _socket->close();
 }
 
-//protected slot
 void SocksConnection::handleIncomingBytes(QByteArray &bytes)
 {
     if (_connectionState.isNull())
@@ -167,26 +157,20 @@ void SocksConnection::handleIncomingBytes(QByteArray &bytes)
     _connectionState->handleIncomingBytes(bytes);
 }
 
-//private slot
-void SocksConnection::handleReadyRead()
+void SocksConnection::onReadyRead()
 {
     if (_socket.isNull())
         return;
 
     int count = 0;
-    const int max = 50;
-    while (_socket->bytesAvailable() > 0 && ++count < max)
+    const int kMaxIterations = 50;
+
+    while (_socket->bytesAvailable() > 0 && ++count < kMaxIterations)
         _recvBuffer.append(_socket->readAll());
-    if (count == max)
+
+    if (count == kMaxIterations)
         qDebug() << this << "looped too much";
 
     //Send the whole buffer to the state, which should eat the portions it wants
-    this->handleIncomingBytes(_recvBuffer);
-}
-
-//private slot
-void SocksConnection::handleSocketClosed()
-{
-    //qDebug() << "Client" << _socket->peerAddress().toString() << ":" << _socket->peerPort() << "disconnected";
-    this->deleteLater();
+    handleIncomingBytes(_recvBuffer);
 }

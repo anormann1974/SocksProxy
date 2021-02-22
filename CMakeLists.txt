@@ -38,8 +38,6 @@ if(Qt5_FOUND AND WIN32 AND TARGET Qt5::qmake AND NOT TARGET Qt5::windeployqt)
 endif()
 
 set(LIBRARY_HEADERS
-    src/SocksSessionManager.h
-    src/SocksSession.h
     src/SocksServer.h
     src/SocksConnection.h
     src/decorators/ThrottlingDecorator.h
@@ -68,8 +66,6 @@ set(LIBRARY_HEADERS
 )
 
 set(LIBRARY_SOURCES
-    src/SocksSessionManager.cpp
-    src/SocksSession.cpp
     src/SocksServer.cpp
     src/SocksConnection.cpp
     src/decorators/ThrottlingDecorator.cpp

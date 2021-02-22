@@ -12,7 +12,7 @@ ThrottlingDecorator::ThrottlingDecorator(QAbstractSocket *toDecorate, QObject *p
     _cheaterSocketReference = toDecorate;
 
     //The rest of the constructor code is in this method to reduce code duplication
-    this->commonConstructor();
+    commonConstructor();
 }
 
 ThrottlingDecorator::ThrottlingDecorator(qreal readBytesPerSecond, qreal writeBytesPerSecond, QAbstractSocket *toDecorate, QObject *parent) :
@@ -21,10 +21,10 @@ ThrottlingDecorator::ThrottlingDecorator(qreal readBytesPerSecond, qreal writeBy
     _cheaterSocketReference = toDecorate;
 
     //The rest of the constructor code is in this method to reduce code duplication
-    this->commonConstructor();
+    commonConstructor();
 
-    this->setReadBytesPerSecond(readBytesPerSecond);
-    this->setWriteBytesPerSecond(writeBytesPerSecond);
+    setReadBytesPerSecond(readBytesPerSecond);
+    setWriteBytesPerSecond(writeBytesPerSecond);
 }
 
 ThrottlingDecorator::~ThrottlingDecorator()
@@ -34,7 +34,7 @@ ThrottlingDecorator::~ThrottlingDecorator()
 //virtual from QIODeviceDecorator
 bool ThrottlingDecorator::atEnd() const
 {
-    return (this->bytesAvailable() <= 0);
+    return (bytesAvailable() <= 0);
 }
 
 //virtual from QIODeviceDecorator
@@ -85,7 +85,7 @@ void ThrottlingDecorator::setWriteBytesPerSecond(qint64 maxWriteBytesPerSecond)
 //pure-virtual from QIODevice
 qint64 ThrottlingDecorator::readData(char *data, qint64 maxlen)
 {
-    if (this->bytesAvailable() == 0)
+    if (bytesAvailable() == 0)
         return 0;
 
     qint64 actuallyRead = qMin<qint64>(maxlen,_readQueue.size());
@@ -103,7 +103,7 @@ qint64 ThrottlingDecorator::readData(char *data, qint64 maxlen)
 //pure-virtual from QIODevice
 qint64 ThrottlingDecorator::readLineData(char *data, qint64 maxlen)
 {
-    if (!this->canReadLine())
+    if (!canReadLine())
         return 0;
 
     QByteArray temp = _readQueue.mid(0,maxlen);
@@ -125,7 +125,7 @@ qint64 ThrottlingDecorator::writeData(const char *data, qint64 len)
         _writeQueue.append(data[i]);
 
     if (_writeBucket > 0)
-        this->handleWriteQueue();
+        handleWriteQueue();
 
     return len;
 }
@@ -183,15 +183,15 @@ void ThrottlingDecorator::handleBuckets()
     }
     else if (_toDecorate->bytesAvailable() <= 0 && _childIsFinished)
     {
-        this->aboutToClose();
-        this->close();
+        aboutToClose();
+        close();
     }
 
     //Send as many bytes as we can from the write queue
-    this->handleWriteQueue();
+    handleWriteQueue();
 
     //Read as many bytes as we can into the read queue
-    this->handleReadQueue();
+    handleReadQueue();
 }
 
 //private slot
@@ -222,7 +222,7 @@ void ThrottlingDecorator::handleReadQueue()
     _readQueue.append(_toDecorate->read(numBytesToRead));
     _readBucket -= numBytesToRead;
     _bytesReadSinceLastMetric += numBytesToRead;
-    this->readyRead();
+    readyRead();
 }
 
 //private slot
@@ -248,29 +248,22 @@ void ThrottlingDecorator::commonConstructor()
 {
     _readBucket = 0;
     _writeBucket = 0;
-    this->setReadBytesPerSecond(1024*500);
-    this->setWriteBytesPerSecond(1024*500);
+    setReadBytesPerSecond(1024*500);
+    setWriteBytesPerSecond(1024*500);
 
     //This timer is what makes the throttling work
     _bucketTimer = new QTimer(this);
-    connect(_bucketTimer,
-            &QTimer::timeout,
-            this,
-            &ThrottlingDecorator::handleBuckets);
+    connect(_bucketTimer, &QTimer::timeout, this, &ThrottlingDecorator::handleBuckets);
     _bucketTimer->start(40);
     _lastBucketTime.start();
 
     //This timer is what makes the metrics work
-    QTimer * metricTimer = new QTimer(this);
-    connect(metricTimer,
-            &QTimer::timeout,
-            this,
-            &ThrottlingDecorator::handleMetrics);
+    auto metricTimer = new QTimer(this);
+    connect(metricTimer, &QTimer::timeout, this, &ThrottlingDecorator::handleMetrics);
     metricTimer->start(1000);
     _bytesReadSinceLastMetric = 0.0;
     _bytesWrittenSinceLastMetric = 0.0;
     _lastMetricTime.start();
-
 
     _childIsFinished = false;
 }

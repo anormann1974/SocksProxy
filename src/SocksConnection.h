@@ -17,7 +17,7 @@ class SocksConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit SocksConnection(QAbstractSocket * socket, QObject *parent = 0);
+    explicit SocksConnection(QAbstractSocket *socket, QObject *parent = nullptr);
     virtual ~SocksConnection();
 
     QPointer<SocksState> connectionState();
@@ -26,22 +26,21 @@ public:
     void setSocksVersion(SocksProtocolMessage::SocksVersion);
     bool socksVersionSet() const;
 
-    bool sendMessage(QSharedPointer<SocksProtocolMessage> msg, QString * error=0);
+    bool sendMessage(QSharedPointer<SocksProtocolMessage> msg, QString *error = nullptr);
 
     QHostAddress myBoundAddress() const;
     QHostAddress peerAddress() const;
        
 public slots:
     void sendData(const QByteArray& toSend);
-    void setState(SocksState * nState);
+    void setState(SocksState *state);
     void close();
 
 protected slots:
     void handleIncomingBytes(QByteArray &bytes);
 
 private slots:
-    void handleReadyRead();
-    void handleSocketClosed();
+    void onReadyRead();
 
 private:
     QPointer<SocksState> _connectionState;

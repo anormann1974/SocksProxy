@@ -56,7 +56,7 @@ SocksProtocolMessage::ParseResult Socks5GreetingMessage::parse(QByteArray& bytes
     {
         quint8 method;
         stream >> method;
-        _authMethods.append(method);
+        _authMethods.insert(method);
     }
 
     //Remove the bytes we used
@@ -79,7 +79,7 @@ qint64 Socks5GreetingMessage::minimumMessageLength() const
     return 3;
 }
 
-QList<quint8> Socks5GreetingMessage::authMethods() const
+const QSet<quint8>& Socks5GreetingMessage::authMethods() const
 {
     return _authMethods;
 }

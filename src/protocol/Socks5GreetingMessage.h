@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QString>
-#include <QList>
+#include <QSet>
 
 #include "SocksProtocolMessage.h"
 
@@ -18,8 +18,8 @@ public:
     //pure-virtual from SocksProtocolMessage
     virtual qint64 minimumMessageLength() const override;
 
-    QList<quint8> authMethods() const;
+    const QSet<quint8>& authMethods() const;
 
 private:
-    QList<quint8> _authMethods;
+    QSet<quint8> _authMethods;
 };

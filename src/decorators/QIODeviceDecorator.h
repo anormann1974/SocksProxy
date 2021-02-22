@@ -33,7 +33,7 @@ protected:
     virtual qint64 writeData(const char *data, qint64 len) override;
 
     virtual void handleChildAboutToClose();
-    virtual void handleChildBytesWritten(qint64);
+    virtual void handleChildBytesWritten(qint64 bytes);
     virtual void handleChildReadChannelFinished();
     virtual void handleChildReadyRead();
     

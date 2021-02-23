@@ -1,8 +1,10 @@
 #include "SocksServer.h"
-#include "SocksConnection.h"
+#include "Socks4Connection.h"
+#include "Socks5Connection.h"
 
 #include <QLoggingCategory>
 #include <QTcpServer>
+#include <QTcpSocket>
 #include <QDataStream>
 
 
@@ -71,81 +73,60 @@ bool SocksServer::isStarted() const
 
 void SocksServer::onNewIncomingConnection()
 {
-    int count = 0;
-    const int max = 50;
-
-    while (_serverSock->hasPendingConnections() && ++count < max)
+    while (_serverSock->hasPendingConnections())
     {
         auto clientSock = _serverSock->nextPendingConnection();
 
-//        connect(clientSock, &QTcpSocket::readyRead, this, [clientSock]() {
-//            QByteArray buffer;
-
-//            while (clientSock->bytesAvailable() > 0)
-//            {
-//                buffer.append(clientSock->readAll());
-//            }
-
-//            qCDebug(lc) << "New data available:" << buffer.toHex(' ');
-
-//            // init state
-//            {
-//                uint8_t version;
-//                QSet<uint8_t> authList;
-
-//                QDataStream stream(&buffer, QIODevice::ReadOnly);
-//                stream >> version;
-
-//                if (version == 5)
-//                {
-//                    uint8_t numAuth;
-//                    stream >> numAuth;
-
-//                    authList.reserve(numAuth);
-
-//                    for (uint8_t i=0; i<numAuth; ++i)
-//                    {
-//                        uint8_t auth;
-//                        stream >> auth;
-
-//                        authList.insert(auth);
-//                    }
-
-//                    if (authList.contains(0x00))
-//                    {
-//                        QByteArray output;
-//                        QDataStream out(&output, QIODevice::WriteOnly);
-
-//                        const uint8_t ver = 5;
-//                        const uint8_t auth = 0;
-//                        out << ver << auth;
-
-//                        qCDebug(lc) << "Writing auth reply:" << output.toHex(' ');
-//                        clientSock->write(output);
-//                    }
-//                }
-//            }
-//        });
+        connect(clientSock, &QTcpSocket::readyRead, this, &SocksServer::onReadReady);
 
 //        connect(clientSock, &QTcpSocket::aboutToClose, this, []() {
 //        });
 
 
-        QPointer<SocksConnection> connection = new SocksConnection(clientSock, this);
+        //qCDebug(lc).nospace().noquote() << "Client " << clientSock->peerAddress().toString() << ":" << clientSock->peerPort() << " connected";
+    }
+}
 
-        connect(connection.data(), &SocksConnection::destroyed, this, [this, connection]() {
+void SocksServer::onReadReady()
+{
+    auto clientSock = qobject_cast<QTcpSocket*>(sender());
+
+    QByteArray buffer;
+
+    while (clientSock->bytesAvailable() > 0)
+    {
+        buffer.append(clientSock->readAll());
+    }
+
+    //qCDebug(lc) << "New data available:" << buffer.toHex(' ') << clientSock;
+
+    QPointer<SocksConnection> connection;
+
+    if (buffer.size() > 0 && buffer.at(0) == 5)
+    {
+        qCDebug(lc) << "SOCKS5 request";
+
+        connection = new Socks5Connection(clientSock, buffer, this);
+    }
+    else if (buffer.size() > 0 && buffer.at(0) == 4)
+    {
+        qCDebug(lc) << "SOCKS4 request";
+
+        connection = new Socks4Connection(clientSock, buffer, this);
+    }
+
+    if (!connection.isNull())
+    {
+        connect(connection, &SocksConnection::destroyed, this, [this, connection]() {
             if (connection.isNull())
             {
-                //qCDebug(lc) << "Removing connection" << connection.data();
                 _connections.removeOne(connection);
+                qCDebug(lc) << "Removing connection:" << _connections.size();
             }
         });
 
         _connections.append(connection);
-
-        qCDebug(lc).nospace().noquote() << "Client " << clientSock->peerAddress().toString() << ":" << clientSock->peerPort() << " connected";
     }
 
-    if (count == max)
-        qCDebug(lc) << "Looped too much";
+    disconnect(clientSock, &QTcpSocket::readyRead, this, &SocksServer::onReadReady);
 }

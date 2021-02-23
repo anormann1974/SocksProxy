@@ -40,57 +40,15 @@ endif()
 set(LIBRARY_HEADERS
     src/SocksServer.h
     src/SocksConnection.h
-    src/decorators/ThrottlingDecorator.h
-    src/decorators/QIODeviceDecorator.h
-    src/protocol/SocksReplyMessage4a.h
-    src/protocol/SocksProtocolMessage.h
-    src/protocol/Socks5UDPRequestMessage.h
-    src/protocol/Socks5RequestMessage.h
-    src/protocol/Socks5ReplyMessage.h
-    src/protocol/Socks5MethodSelectionMessage.h
-    src/protocol/Socks5GreetingMessage.h
-    src/protocol/Socks4RequestMessage.h
-    src/protocol/Socks4ReplyMessage.h
-    src/states/SocksState.h
-    src/states/Socks5UDPAssociateState.h
-    src/states/Socks5UDPAssociatedState.h
-    src/states/Socks5ConnectState.h
-    src/states/Socks5ConnectedState.h
-    src/states/Socks5AuthState.h
-    src/states/Socks5AuthenticatedState.h
-    src/states/Socks4InitialState.h
-    src/states/Socks4ConnectState.h
-    src/states/Socks4ConnectedState.h
-    src/states/InitialState.h
-    src/decorators/QTcpSocketDecorator.h
+    src/Socks4Connection.h
+    src/Socks5Connection.h
 )
 
 set(LIBRARY_SOURCES
     src/SocksServer.cpp
     src/SocksConnection.cpp
-    src/decorators/ThrottlingDecorator.cpp
-    src/decorators/QIODeviceDecorator.cpp
-    src/protocol/SocksReplyMessage4a.cpp
-    src/protocol/SocksProtocolMessage.cpp
-    src/protocol/Socks5UDPRequestMessage.cpp
-    src/protocol/Socks5RequestMessage.cpp
-    src/protocol/Socks5ReplyMessage.cpp
-    src/protocol/Socks5MethodSelectionMessage.cpp
-    src/protocol/Socks5GreetingMessage.cpp
-    src/protocol/Socks4RequestMessage.cpp
-    src/protocol/Socks4ReplyMessage.cpp
-    src/states/SocksState.cpp
-    src/states/Socks5UDPAssociateState.cpp
-    src/states/Socks5UDPAssociatedState.cpp
-    src/states/Socks5ConnectState.cpp
-    src/states/Socks5ConnectedState.cpp
-    src/states/Socks5AuthState.cpp
-    src/states/Socks5AuthenticatedState.cpp
-    src/states/Socks4InitialState.cpp
-    src/states/Socks4ConnectState.cpp
-    src/states/Socks4ConnectedState.cpp
-    src/states/InitialState.cpp
-    src/decorators/QTcpSocketDecorator.cpp
+    src/Socks4Connection.cpp
+    src/Socks5Connection.cpp
 )
 
 set(SOURCES

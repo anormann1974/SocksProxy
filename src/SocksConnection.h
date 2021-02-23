@@ -1,54 +1,58 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 #include <QPointer>
-#include <QAbstractSocket>
-#include <QTcpSocket>
-#include <QByteArray>
-#include <QSharedPointer>
-#include <QIODevice>
-
-#include "protocol/SocksProtocolMessage.h"
 
 
-class SocksState;
+class QAbstractSocket;
+class QIODevice;
+class QHostAddress;
 
 class SocksConnection : public QObject
 {
     Q_OBJECT
 public:
+
+    enum State {
+        Connected,
+        NeedAuth,
+        Authed,
+        Tunnel
+    };
+
+    enum ErrorCode : uint8_t {
+        Success = 0,
+        GeneralFailure = 1,
+        NotAllowed = 2,
+        NetUnreachable = 3,
+        HostUnreachable = 4,
+        ConnRefused = 5,
+        TtlExpired = 6,
+        CommandNotSupported = 7,
+        AddresstypeNotSupported = 8
+    };
+
     explicit SocksConnection(QAbstractSocket *socket, QObject *parent = nullptr);
     virtual ~SocksConnection();
 
-    QPointer<SocksState> connectionState();
-
-    SocksProtocolMessage::SocksVersion socksVersion() const;
-    void setSocksVersion(SocksProtocolMessage::SocksVersion);
-    bool socksVersionSet() const;
-
-    bool sendMessage(QSharedPointer<SocksProtocolMessage> msg, QString *error = nullptr);
-
-    QHostAddress myBoundAddress() const;
-    QHostAddress peerAddress() const;
-       
 public slots:
-    void sendData(const QByteArray& toSend);
-    void setState(SocksState *state);
     void close();
-
-protected slots:
-    void handleIncomingBytes(QByteArray &bytes);
 
 private slots:
     void onReadyRead();
+    void onRemoteReadyRead();
+    void onRemoteConnected();
 
-private:
-    QPointer<SocksState> _connectionState;
-    QPointer<QAbstractSocket> _rawSocket;
-    QPointer<QIODevice> _socket;
-    QByteArray _recvBuffer;
+protected:
+    virtual void handleIncomingBytes(const QByteArray &bytes) = 0;
+    virtual void handleRemoteConnected() = 0;
+    void connectToHost(const QHostAddress &host, quint16 port);
 
-    bool _socksVersionSet;
-    SocksProtocolMessage::SocksVersion _socksVersion;
-    
+    QPointer<QAbstractSocket> _clientSocket;
+    QPointer<QAbstractSocket> _remoteSocket;
+    State _state;
+    QTimer _timeout;
+    QString _remoteHost;
+    std::chrono::milliseconds _timeoutPeriod;
 };

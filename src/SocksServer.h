@@ -6,8 +6,8 @@
 #include <QList>
 #include <QHostAddress>
 
-class SocksConnection;
 
+class SocksConnection;
 
 class SocksServer : public QObject
 {
@@ -25,10 +25,11 @@ public:
     
 private:
     void onNewIncomingConnection();
+    void onReadReady();
 
     QHostAddress _listenAddress;
     quint16 _listenPort;
     qreal _throttle;
     QScopedPointer<QTcpServer> _serverSock;
-    QList<QPointer<SocksConnection> > _connections;    
+    QList<QPointer<SocksConnection> > _connections;
 };

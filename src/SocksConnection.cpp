@@ -1,176 +1,106 @@
 #include "SocksConnection.h"
-#include "states/InitialState.h"
-#include "decorators/QIODeviceDecorator.h"
-#include "decorators/ThrottlingDecorator.h"
 
-#include <QtDebug>
+#include <QLoggingCategory>
 #include <QHostAddress>
+#include <QTcpSocket>
+
+namespace {
+static QLoggingCategory lc("SocksConnection");
+}
+
+using namespace std::chrono_literals;
 
 
 SocksConnection::SocksConnection(QAbstractSocket *socket, QObject *parent)
     : QObject(parent)
-    , _rawSocket(socket)
-    , _socksVersionSet(false)
+    , _clientSocket(socket)
+    , _state(Connected)
+    , _timeoutPeriod{30s}
 {
-    if (_rawSocket.isNull())
+    if (_clientSocket.isNull())
     {
-        qWarning() << this << "initialized with null socket";
+        qCWarning(lc) << "Initialized with null socket";
         return;
     }
 
-    _socket = new ThrottlingDecorator(_rawSocket,this);
-
     //When we have incoming bytes, we read them
-    connect(_socket.data(), &QIODevice::readyRead, this, &SocksConnection::onReadyRead);
+    connect(_clientSocket, &QIODevice::readyRead, this, &SocksConnection::onReadyRead);
 
     //When our socket closes, we die
-    connect(_socket.data(), &QIODevice::aboutToClose, this, &SocksConnection::deleteLater);
+    connect(_clientSocket, &QIODevice::aboutToClose, this, &SocksConnection::deleteLater);
 
-    //Set our state to the initial "someone just connected" state
-    setState(new InitialState(this));
+    connect(&_timeout, &QTimer::timeout, this, &SocksConnection::close);
 }
 
 SocksConnection::~SocksConnection()
 {
-    if (!_socket.isNull())
+    qCDebug(lc) << "Closing connection to:" << _remoteHost << "timeout:" << (_timeout.remainingTime() == _timeout.interval());
+
+    if (!_remoteSocket.isNull())
     {
-        _socket->close();
-        _socket->deleteLater();
+        _remoteSocket->close();
+        _remoteSocket->deleteLater();
     }
 
-    if (!_connectionState.isNull())
-        delete _connectionState;
-}
-
-QPointer<SocksState> SocksConnection::connectionState()
-{
-    return _connectionState;
-}
-
-SocksProtocolMessage::SocksVersion SocksConnection::socksVersion() const
-{
-    return _socksVersion;
-}
-
-void SocksConnection::setSocksVersion(SocksProtocolMessage::SocksVersion nVer)
-{
-    if (_socksVersionSet)
-        return;
-
-    _socksVersionSet = true;
-    _socksVersion = nVer;
-}
-
-bool SocksConnection::socksVersionSet() const
-{
-    return _socksVersionSet;
-}
-
-bool SocksConnection::sendMessage(QSharedPointer<SocksProtocolMessage> msg, QString *error)
-{
-    if (msg.isNull())
+    if (!_clientSocket.isNull())
     {
-        if (error)
-            *error = "Cannot send null message";
-        return false;
-    }
-
-    QByteArray toSend;
-    QString serializeError;
-    if (!msg->toBytes(&toSend,&serializeError))
-    {
-        if (error)
-            *error = "Failed to send message. Error:" + serializeError;
-        return false;
-    }
-
-    this->sendData(toSend);
-    return true;
-}
-
-QHostAddress SocksConnection::myBoundAddress() const
-{
-    return _rawSocket->localAddress();
-}
-
-QHostAddress SocksConnection::peerAddress() const
-{
-    return _rawSocket->peerAddress();
-}
-
-void SocksConnection::sendData(const QByteArray &toSend)
-{
-    if (_socket.isNull())
-    {
-        qWarning() << "Tried to send" << toSend.size() << "bytes but socket was null";
-        return;
-    }
-
-    qint64 written = _socket->write(toSend);
-    if (written != toSend.size())
-        qWarning() << this << "wrote" << written << "bytes but should have written" << toSend.size() << "bytes";
-
-    //qDebug() << "State" << _connectionState << "wrote" << toSend.toHex();
-}
-
-void SocksConnection::setState(SocksState *state)
-{
-    if (state == nullptr)
-        return;
-
-    if (!_connectionState.isNull())
-        delete _connectionState;
-
-    _connectionState = state;
-
-    //Call the "you've just been set as the new state!" handler
-    state->handleSetAsNewState();
-
-    //Force the new state to start off where the last one ended traffic-wise
-    if (!_recvBuffer.isEmpty())
-        this->handleIncomingBytes(_recvBuffer);
+        _clientSocket->close();
+        _clientSocket->deleteLater();
+    }    
 }
 
 void SocksConnection::close()
 {
-    if (_socket.isNull())
+    if (_clientSocket.isNull())
         return;
 
-    _socket->close();
-}
-
-void SocksConnection::handleIncomingBytes(QByteArray &bytes)
-{
-    if (_connectionState.isNull())
-    {
-        qWarning() << this << "No state to do handleIncomingBytes";
-        return;
-    }
-
-    if (bytes.size() == 0)
-    {
-        qWarning() << this << "got empty array in handleIncomingBytes";
-        return;
-    }
-
-    //Pass the bytes to the state by reference. The state will eat the bytes it wants
-    _connectionState->handleIncomingBytes(bytes);
+    _clientSocket->close();
 }
 
 void SocksConnection::onReadyRead()
 {
-    if (_socket.isNull())
+    if (_clientSocket.isNull())
         return;
 
-    int count = 0;
-    const int kMaxIterations = 50;
+    QByteArray recvBuffer;
 
-    while (_socket->bytesAvailable() > 0 && ++count < kMaxIterations)
-        _recvBuffer.append(_socket->readAll());
+    while (_clientSocket->bytesAvailable() > 0)
+        recvBuffer.append(_clientSocket->readAll());
 
-    if (count == kMaxIterations)
-        qDebug() << this << "looped too much";
+    handleIncomingBytes(recvBuffer);
+}
 
-    //Send the whole buffer to the state, which should eat the portions it wants
-    handleIncomingBytes(_recvBuffer);
+void SocksConnection::connectToHost(const QHostAddress &host, quint16 port)
+{
+    qCDebug(lc).noquote().nospace() << "Connecting to: " << host.toString() << ":" << port;
+
+    _remoteSocket = new QTcpSocket(this);
+
+    connect(_remoteSocket, &QTcpSocket::aboutToClose, this, &SocksConnection::close);
+    connect(_remoteSocket, &QTcpSocket::errorOccurred, _remoteSocket, &QTcpSocket::close);
+    connect(_remoteSocket, &QTcpSocket::errorOccurred, this, &SocksConnection::close);
+    connect(_remoteSocket, &QTcpSocket::connected, this, &SocksConnection::onRemoteConnected);
+    connect(_remoteSocket, &QTcpSocket::readyRead, this, &SocksConnection::onRemoteReadyRead);
+
+    _remoteSocket->connectToHost(host, port);
+}
+
+void SocksConnection::onRemoteReadyRead()
+{
+    while (_remoteSocket->bytesAvailable() > 0)
+    {
+        const auto bytes = _remoteSocket->readAll();
+
+        _clientSocket->write(bytes);
+    }
+
+    _timeout.start(_timeoutPeriod);
+}
+
+void SocksConnection::onRemoteConnected()
+{
+    _remoteHost = _remoteSocket->peerAddress().toString();
+    _timeout.start(_timeoutPeriod);
+
+    handleRemoteConnected();
 }
